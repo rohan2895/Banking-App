@@ -1,0 +1,28 @@
+server:
+  port: 4000
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+      routes:
+        - id: auth
+          uri: http://localhost:8081
+          predicates: [ Path=/auth/** ]
+        - id: accounts
+          uri: http://localhost:8082
+          predicates: [ Path=/accounts/** ]
+        - id: me
+          uri: http://localhost:8082
+          predicates: [ Path=/me ]
+        - id: transactions
+          uri: http://localhost:8083
+          predicates: [ Path=/transactions/** ]

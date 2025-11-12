@@ -1,0 +1,22 @@
+{
+  "groups": [
+    {
+      "name": "jwt",
+      "type": "dev.bank.auth.config.JwtProperties",
+      "sourceType": "dev.bank.auth.config.JwtProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "jwt.issuer",
+      "type": "java.lang.String",
+      "sourceType": "dev.bank.auth.config.JwtProperties"
+    },
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "sourceType": "dev.bank.auth.config.JwtProperties"
+    }
+  ],
+  "hints": []
+}
