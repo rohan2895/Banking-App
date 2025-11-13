@@ -1,5 +1,7 @@
 import React from "react";
 import { useAuth } from "../auth/AuthContext.jsx";
+import toast from "react-hot-toast";
+import { PlusCircle } from "lucide-react";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -17,7 +19,6 @@ export default function Accounts() {
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState(null);
-  const [ok, setOk] = React.useState(null);
 
   const authHeader = React.useMemo(
     () => (token ? { Authorization: `Bearer ${token}` } : {}),
@@ -26,17 +27,13 @@ export default function Accounts() {
 
   async function fetchAccounts() {
     setErr(null);
-    setOk(null);
     setLoading(true);
     try {
-      if (!token) throw new Error("Not logged in. Please login again.");
       const res = await fetch(`${API}/accounts`, { headers: authHeader });
-      if (!res.ok) {
-        const body = await toJsonSafe(res);
+      if (!res.ok)
         throw new Error(
-          body?.message || `Failed to load accounts (${res.status})`
+          (await toJsonSafe(res))?.message || `Failed to load (${res.status})`
         );
-      }
       setItems(await res.json());
     } catch (ex) {
       setErr(ex.message);
@@ -46,29 +43,25 @@ export default function Accounts() {
   }
 
   async function openAccount() {
-    setErr(null);
-    setOk(null);
+    if (!token) return;
     setBusy(true);
+    setErr(null);
     try {
-      if (!token) throw new Error("Not logged in. Please login again.");
       const res = await fetch(`${API}/accounts`, {
         method: "POST",
-        headers: {
-          ...authHeader,
-          "Content-Type": "application/json",
-        },
+        headers: authHeader,
       });
-      if (!res.ok) {
-        const body = await toJsonSafe(res);
+      if (!res.ok)
         throw new Error(
-          body?.message || `Create account failed (${res.status})`
+          (await toJsonSafe(res))?.message ||
+            `Create account failed (${res.status})`
         );
-      }
       const created = await res.json();
-      setOk(`Account #${created.id} opened`);
+      toast.success(`Account #${created.id} opened`);
       await fetchAccounts();
     } catch (ex) {
       setErr(ex.message);
+      toast.error(ex.message);
     } finally {
       setBusy(false);
     }
@@ -76,50 +69,73 @@ export default function Accounts() {
 
   React.useEffect(() => {
     fetchAccounts();
-  }, []); // initial load
-
-  if (loading) return <div className="card">Loading accounts…</div>;
+  }, []);
 
   return (
     <div className="card">
       <h1>Accounts</h1>
       <p className="muted">
-        Logged in as: <b>{user?.email ?? "unknown"}</b>
+        Logged in as: <b>{user?.email}</b>
       </p>
 
-      <div className="row" style={{ marginBottom: 12 }}>
+      <div className="row" style={{ marginTop: 10, marginBottom: 10 }}>
         <button
+          className="btn-accent"
           type="button"
           onClick={openAccount}
           disabled={!token || busy}
-          title={
-            !token
-              ? "Login required"
-              : busy
-              ? "Please wait…"
-              : "Open a new account"
-          }
         >
+          <PlusCircle size={16} style={{ marginRight: 6 }} />{" "}
           {busy ? "Opening…" : "Open new account"}
         </button>
-        <button type="button" onClick={fetchAccounts} disabled={busy}>
+        <button
+          className="btn-ghost"
+          type="button"
+          onClick={fetchAccounts}
+          disabled={busy}
+        >
           Refresh
         </button>
       </div>
 
-      {ok && <div className="success">{ok}</div>}
-      {err && <div className="error">{err}</div>}
+      {err && <div className="error">Error: {err}</div>}
 
-      {items.length === 0 ? (
-        <p className="muted">No accounts yet. Click “Open new account”.</p>
+      {loading ? (
+        <p className="muted">Loading accounts…</p>
+      ) : items.length === 0 ? (
+        <div className="empty">
+          <img
+            alt="Illustration"
+            src="https://illustrations.popsy.co/blue/savings.svg"
+          />
+          <div>
+            <h3 style={{ margin: "0 0 4px" }}>No accounts yet</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Click “Open new account” to get started.
+            </p>
+          </div>
+        </div>
       ) : (
-        <ul>
+        <div className="list">
           {items.map((a) => (
-            <li key={a.id}>
-              #{a.id} • {a.type} • {a.ownerEmail} • ₹{a.balance}
-            </li>
+            <div className="tile" key={a.id}>
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <h3 style={{ margin: 0 }}>
+                  #{a.id} {a.type}
+                </h3>
+                <span className="badge">Active</span>
+              </div>
+              <div className="kv">
+                <span>Owner</span>
+                <span>{a.ownerEmail}</span>
+              </div>
+              <div className="kv">
+                <span>Balance</span>
+                <span>₹{a.balance}</span>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
